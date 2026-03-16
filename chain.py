@@ -109,9 +109,14 @@ def _get_llm() -> ChatGoogleGenerativeAI:
     if _llm_cache is not None:
         return _llm_cache
 
-    api_key = os.getenv("GOOGLE_API_KEY")
+    # Try both names for maximum compatibility (local .env vs server Secrets)
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+
     if not api_key:
-        raise ValueError("GOOGLE_API_KEY not found in .env file.")
+        raise ValueError(
+            "API Key not found. Please ensure 'GEMINI_API_KEY' or 'GOOGLE_API_KEY' "
+            "is set in your environment or Streamlit Secrets."
+        )
 
     _llm_cache = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
