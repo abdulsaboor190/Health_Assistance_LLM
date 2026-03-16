@@ -239,12 +239,11 @@ div.role-idle-btn .stButton > button:hover {{
 # ──────────────────────────────────────────────────────────────────
 # 6. RUN THE ACTIVE PAGE
 # ──────────────────────────────────────────────────────────────────
-pg.run()
-
-# ──────────────────────────────────────────────────────────────────
-# 7. JS SIDEBAR WATCHER (runs on every page after content renders)
 # Injects a floating '▶' button that appears whenever the sidebar is
 # collapsed — JS approach is used because the native Streamlit expand
 # button lives in a transparent header and may not be in the DOM.
+# We call this BEFORE pg.run() to ensure the JS logic is active.
 # ──────────────────────────────────────────────────────────────────
 inject_sidebar_js(D)
+
+pg.run()

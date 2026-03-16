@@ -86,47 +86,57 @@ html, body, .stApp, [data-testid="stAppViewContainer"],
 div[data-testid="stDecoration"], div[data-testid="stToolbar"],
 footer, #MainMenu {{ display:none !important; height:0 !important; }}
 
-/* ── Header — transparent, visible for sidebar toggle ──────── */
+/* ── Header — transparent, allow clicks to pass through except to buttons ── */
 div[data-testid="stHeader"], header[data-testid="stHeader"],
 .stApp > header {{
     background:transparent !important; border:none !important;
     position:fixed !important; top:0 !important; left:0 !important;
-    height:3rem !important; z-index:999 !important;
+    height:3.5rem !important; z-index:999 !important;
     pointer-events:none !important;
 }}
-div[data-testid="stHeader"] button {{ pointer-events:all !important; }}
+/* Ensure ALL buttons in the header area can be clicked */
+header button, div[data-testid="stHeader"] button {{
+    pointer-events:all !important;
+}}
 
-/* ── Sidebar EXPAND button — floats on LEFT EDGE when sidebar is closed ── */
-/* position:fixed with explicit coordinates ensures it is ALWAYS visible    */
-/* and never clipped by the transparent header layer.                       */
-button[data-testid="stBaseButton-headerNoPadding"] {{
+/* ── Sidebar EXPAND button (Pill style on left edge) ────────── */
+/* This targets the native toggle button when sidebar is closed */
+button[data-testid="stBaseButton-headerNoPadding"],
+button[title="Open sidebar"],
+button[title="Show sidebar"] {{
     position         : fixed           !important;
-    left             : 10px            !important;
-    top              : 50vh            !important;
+    left             : 0px             !important;
+    top              : 50vh            !important; /* Middle of screen */
     transform        : translateY(-50%) !important;
-    z-index          : 99999           !important;
+    z-index          : 100000          !important;
     pointer-events   : all             !important;
+    visibility       : visible         !important;
+    opacity          : 1               !important;
     background       : {_surf2}        !important;
     color            : {_acc}          !important;
     border           : 1.5px solid {_bda} !important;
-    border-radius    : 12px            !important;
-    width            : 32px            !important;
-    height           : 48px            !important;
+    border-left      : none            !important;
+    border-radius    : 0 12px 12px 0   !important;
+    width            : 36px            !important;
+    height           : 56px            !important;
     display          : flex            !important;
     align-items      : center          !important;
     justify-content  : center          !important;
-    box-shadow       : 2px 0 14px rgba(0,0,0,0.14) !important;
-    transition       : all 0.2s        !important;
+    box-shadow       : 4px 0 16px rgba(0,0,0,0.15) !important;
+    transition       : all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }}
-button[data-testid="stBaseButton-headerNoPadding"]:hover {{
+button[data-testid="stBaseButton-headerNoPadding"]:hover,
+button[title="Open sidebar"]:hover {{
+    width        : 42px    !important;
     background   : {_surf} !important;
     border-color : {_acc}  !important;
-    box-shadow   : 4px 0 20px rgba(0,0,0,0.20) !important;
+    color        : {_acc}  !important;
 }}
-button[data-testid="stBaseButton-headerNoPadding"] svg {{
-    fill : {_acc} !important;
-    width : 16px  !important;
-    height: 16px  !important;
+button[data-testid="stBaseButton-headerNoPadding"] svg,
+button[title="Open sidebar"] svg {{
+    fill   : {_acc} !important;
+    width  : 20px   !important;
+    height : 20px   !important;
 }}
 
 /* ── Sidebar COLLAPSE pill — floats on RIGHT EDGE of sidebar when open ── */
@@ -420,101 +430,65 @@ def inject_sidebar_js(D: dict):
     components.html(f"""
 <script>
 (function() {{
-    // ── colours from current theme ──────────────────────────────
-    var ACC   = "{_acc}";
     var SURF2 = "{_surf2}";
     var SURF  = "{_surf}";
+    var ACC   = "{_acc}";
     var BDA   = "{_bda}";
-    var TX    = "{_tx}";
     var BTN_ID = "aegis-expand-btn";
 
-    function getSidebar() {{
-        // st.navigation wraps the sidebar in [data-testid="stSidebar"]
-        return window.parent.document.querySelector('[data-testid="stSidebar"]');
+    function getNative() {{
+        var doc = window.parent.document;
+        return (
+            doc.querySelector('[data-testid="stBaseButton-headerNoPadding"]') ||
+            doc.querySelector('button[title="Open sidebar"]') ||
+            doc.querySelector('button[title="Show sidebar"]') ||
+            doc.querySelector('[data-testid="stSidebarCollapse"]')
+        );
     }}
 
-    function getExistingBtn() {{
-        return window.parent.document.getElementById(BTN_ID);
-    }}
-
-    function createExpandBtn() {{
+    function createBtn() {{
+        if (window.parent.document.getElementById(BTN_ID)) return;
         var btn = window.parent.document.createElement("button");
         btn.id = BTN_ID;
-        btn.title = "Open sidebar";
-        btn.innerHTML = "&#9654;";  // ▶
-        btn.style.cssText = [
-            "position:fixed",
-            "left:8px",
-            "top:50vh",
-            "transform:translateY(-50%)",
-            "z-index:2147483647",
-            "background:" + SURF2,
-            "color:" + ACC,
-            "border:1.5px solid " + BDA,
-            "border-radius:12px",
-            "width:30px",
-            "height:50px",
-            "cursor:pointer",
-            "font-size:13px",
-            "display:flex",
-            "align-items:center",
-            "justify-content:center",
-            "box-shadow:3px 0 16px rgba(0,0,0,0.18)",
-            "transition:all 0.2s ease"
-        ].join(";");
-
-        btn.onmouseenter = function() {{
-            btn.style.background = SURF;
-            btn.style.borderColor = ACC;
-            btn.style.boxShadow = "5px 0 22px rgba(0,0,0,0.26)";
-        }};
-        btn.onmouseleave = function() {{
-            btn.style.background = SURF2;
-            btn.style.borderColor = BDA;
-            btn.style.boxShadow = "3px 0 16px rgba(0,0,0,0.18)";
-        }};
-
+        btn.innerHTML = "&#9654;";
+        btn.style.cssText = "position:fixed; left:0; top:50vh; transform:translateY(-50%); z-index:2147483647; " +
+                            "background:"+SURF2+"; color:"+ACC+"; border:1.5px solid "+BDA+"; border-left:none; " +
+                            "border-radius:0 12px 12px 0; width:34px; height:54px; cursor:pointer; " +
+                            "box-shadow:4px 0 16px rgba(0,0,0,0.18); transition:all 0.2s; display:flex; " +
+                            "align-items:center; justify-content:center; font-size:14px;";
+        
         btn.onclick = function() {{
-            // Try every selector Streamlit uses for the expand/collapse trigger
-            var native = (
-                window.parent.document.querySelector('[data-testid="stBaseButton-headerNoPadding"]') ||
-                window.parent.document.querySelector('[data-testid="stSidebarCollapse"]') ||
-                window.parent.document.querySelector('[data-testid="stHeader"] button') ||
-                window.parent.document.querySelector('button[title="Open sidebar"]') ||
-                window.parent.document.querySelector('button[title="Show sidebar"]')
-            );
-            if (native) {{
-                native.click();
-            }}
+            var n = getNative();
+            if (n) n.click();
         }};
-
+        btn.onmouseenter = function() {{ btn.style.background = SURF; btn.style.width = "40px"; }};
+        btn.onmouseleave = function() {{ btn.style.background = SURF2; btn.style.width = "34px"; }};
+        
         window.parent.document.body.appendChild(btn);
-        return btn;
     }}
 
-    function tick() {{
-        var sidebar = getSidebar();
-        var existing = getExistingBtn();
-
-        if (!sidebar) {{
-            // Sidebar element not in DOM yet — remove stale button if any
-            if (existing) existing.remove();
+    function check() {{
+        var doc = window.parent.document;
+        var sb = doc.querySelector('[data-testid="stSidebar"]');
+        var btn = doc.getElementById(BTN_ID);
+        
+        if (!sb) {{
+            if (btn) btn.remove();
             return;
         }}
 
-        // Consider sidebar "collapsed" when its visible width is tiny
-        var collapsed = sidebar.getBoundingClientRect().width < 60;
-
-        if (collapsed && !existing) {{
-            createExpandBtn();
-        }} else if (!collapsed && existing) {{
-            existing.remove();
+        // Sidebar is considered closed if width is narrow
+        var isClosed = sb.getBoundingClientRect().width < 60;
+        
+        if (isClosed && !btn) {{
+            createBtn();
+        }} else if (!isClosed && btn) {{
+            btn.remove();
         }}
     }}
 
-    // Start watching immediately, then every 200 ms
-    tick();
-    setInterval(tick, 200);
+    setInterval(check, 300);
+    check();
 }})();
 </script>
-""", height=0, scrolling=False)
+""", height=0)
