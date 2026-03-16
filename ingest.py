@@ -30,23 +30,33 @@ def main():
         
     print(f"📂 Found {len(pdf_files)} PDF file(s) in '{data_dir}/'")
     
-    # 2. Iterate through each PDF and load its text content
+    # 2. Iterate through each PDF and TXT and load content
+    from langchain_community.document_loaders import TextLoader
+
     documents = []
+    
+    # --- Load PDFs ---
+    pdf_files = glob.glob(os.path.join(data_dir, "**", "*.pdf"), recursive=True)
     for pdf_file in pdf_files:
-        print(f"📄 Loading: {pdf_file}...")
+        print(f"📄 Loading PDF: {pdf_file}...")
         try:
-            # PyPDFLoader extracts text and metadata (like page numbers) from PDFs
             loader = PyPDFLoader(pdf_file)
-            docs = loader.load()
-            documents.extend(docs)
-            print(f"   ✅ Successfully loaded {len(docs)} pages from {os.path.basename(pdf_file)}")
+            documents.extend(loader.load())
         except Exception as e:
-            print(f"   ❌ Error loading {pdf_file}: {e}")
-            
+            print(f"   ❌ Error: {e}")
+
+    # --- Load TXTs ---
+    txt_files = glob.glob(os.path.join(data_dir, "**", "*.txt"), recursive=True)
+    for txt_file in txt_files:
+        print(f"📝 Loading Text: {txt_file}...")
+        try:
+            loader = TextLoader(txt_file, encoding='utf-8')
+            documents.extend(loader.load())
+        except Exception as e:
+            print(f"   ❌ Error: {e}")
+
     if not documents:
-        print("\n⚠️ No content could be extracted from the PDFs.")
-        print("💡 NOTE: If your PDFs are scanned images, PyPDFLoader won't work because it only extracts text.")
-        print("For scanned images, you will need an OCR (Optical Character Recognition) loader like UnstructuredPDFLoader.")
+        print("\n⚠️ No content found. Add .pdf or .txt files to the data/ folder.")
         return
         
     # 3. Split the loaded documents into overlapping chunks
